@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Эко-рейтинг</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+        
+        :root {
+            --green: #4CAF50;
+            --yellow: #FFC107;
+            --red: #F44336;
+        }
+        
+        body {
+            margin: 0;
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #e8f5e9, #f1f8e9);
+            color: #333;
+        }
+        
+        header {
+            background: var(--green);
+            color: white;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+        }
+        
+        nav {
+            display: flex;
+            background: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .nav-btn {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            border: none;
+            background: none;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .nav-btn.active {
+            background: var(--green);
+            color: white;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 15px;
+        }
+        
+        .tab {
+            display: none;
+        }
+        
+        .tab.active {
+            display: block;
+        }
+        
+        /* Dashboard */
+        .dashboard {
+            text-align: center;
+        }
+        
+        .points-card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin: 20px 0;
+        }
+        
+        .points {
+            font-size: 48px;
+            font-weight: 700;
+            color: var(--green);
+        }
+        
+        .btn {
+            background: var(--green);
+            color: white;
+            border: none;
+            padding: 14px 30px;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s;
+        }
+        
+        .btn:hover {
+            transform: scale(1.05);
+        }
+        
+        .history {
+            background: white;
+            border-radius: 15px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        
+        /* Map */
+        #map {
+            height: 450px;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        /* Bins list */
+        .bin-card {
+            background: white;
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+        
+        .fill-bar {
+            height: 12px;
+            background: #eee;
+            border-radius: 10px;
+            flex: 1;
+            margin: 0 15px;
+            overflow: hidden;
+        }
+        
+        .fill-level {
+            height: 100%;
+            transition: width 0.5s;
+        }
+        
+        .status-low { background: var(--green); }
+        .status-medium { background: var(--yellow); }
+        .status-high { background: var(--red); }
+        
+        footer {
+            background: white;
+            padding: 10px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+        }
+        
+        .modal {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 400px;
+            padding: 25px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">🌱 Эко-рейтинг</div>
+        <p style="margin: 5px 0 0; font-size: 14px;">Мұхтар Арын атындағы №24 мамандандырылған лицейі • Талдықорған</p>
+    </header>
+
+    <nav>
+        <button class="nav-btn active" onclick="switchTab(0)">🏠 Басты</button>
+        <button class="nav-btn" onclick="switchTab(1)">🗺️ Карта</button>
+        <button class="nav-btn" onclick="switchTab(2)">🗑️ Жәшіктер</button>
+        <button class="nav-btn" onclick="switchTab(3)">👤 Профиль</button>
+    </nav>
+
+    <div class="container">
+
+        <div id="tab-0" class="tab active">
+            <div class="dashboard">
+                <div class="points-card">
+                    <p style="margin: 0; color: #666;">Сіздің ұпайларыңыз</p>
+                    <div class="points" id="points">245</div>
+                    <p style="margin: 10px 0 0; font-size: 14px;">Бонус: 1245 теңге</p>
+                </div>
+
+                <h3 style="margin: 30px 0 15px;">Қоқыс сұрыптаңыз және ұпай жинаңыз!</h3>
+                
+                <button class="btn" onclick="addPoints(20, 'Пластик')">♻️ Пластик (+20 ұпай)</button>
+                <button class="btn" onclick="addPoints(15, 'Қағаз')">📄 Қағаз (+15 ұпай)</button>
+                <button class="btn" onclick="addPoints(30, 'Шыны')">🛢️ Шыны (+30 ұпай)</button>
+                <button class="btn" onclick="addPoints(25, 'Металл')">🔩 Металл (+25 ұпай)</button>
+                <button class="btn" onclick="addPoints(10, 'Органикалық')">🍎 Органикалық (+10 ұпай)</button>
+
+                <div class="history" id="history">
+                    <h4 style="margin: 0 0 10px;">Соңғы әрекеттер</h4>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-1" class="tab">
+            <div style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+                <h3>Талдықорғандағы ақылды жәшіктер</h3>
+                <button class="btn" style="padding: 10px 20px; font-size: 14px;" onclick="findMyLocation()">📍 Менің орным</button>
+            </div>
+            <div id="map"></div>
+            <p style="text-align: center; margin-top: 10px; font-size: 13px; color: #666;">
+                🟢 Толық емес • 🟡 Орташа • 🔴 Толық
+            </p>
+        </div>
+
+        <div id="tab-2" class="tab">
+            <h3 style="margin-bottom: 15px;">Барлық ақылды жәшіктер (датчик мәліметтері)</h3>
+            <div id="bins-list"></div>
+            <button class="btn" style="width: 100%; margin-top: 20px;" onclick="refreshSensors()">🔄 Датчиктерді жаңарту (Smart City)</button>
+        </div>
+
+        <div id="tab-3" class="tab">
+            <div style="text-align: center; padding: 30px 0;">
+                <div style="width: 100px; height: 100px; background: var(--green); color: white; border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; font-size: 40px;">👤</div>
+                <h2>Дүйсенбек Мұрат</h2>
+                <p style="color: #666; font-size: 16px;">Авторлары: Құрманбек Бағжанат, Нұражитанұлы Мұстафа</p>
+                <p style="color: #666; font-size: 14px;">7 "Г" сыныбы оқушылары</p>
+                <p style="color: var(--green); font-size: 18px;">🔥 12 күн қатарынан сұрыптау</p>
+                
+                <div style="margin: 30px 0; background: white; border-radius: 15px; padding: 20px;">
+                    <p><strong>Жалпы жиналған ұпай:</strong> <span id="total-points">1245</span></p>
+                    <p><strong>Қатысқан жәшіктер:</strong> 47</p>
+                    <p><strong>Эко-дәреже:</strong> 🌟 Алтын деңгей</p>
+                </div>
+                
+                <button class="btn" onclick="alert('Сыйақылар бөлімі жақында шығады! 🎁')">🎁 Сыйақыларды алу</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="success-modal">
+        <div class="modal-content">
+            <h2>✅ Сәтті!</h2>
+            <p id="modal-text"></p>
+            <button class="btn" onclick="closeModal()" style="width: 100%;">Жақсы</button>
+        </div>
+    </div>
+
+    <footer>
+        Авторлары: Қ. Бағжанат, Н. Мұстафа • Smart City Талдықорған
+    </footer>
+
+    <script>
+        let userPoints = localStorage.getItem('ecoPoints') ? parseInt(localStorage.getItem('ecoPoints')) : 245;
+        let history = JSON.parse(localStorage.getItem('ecoHistory')) || [];
+        
+        // Талдықорған қаласының нүктелері
+        let smartBins = [
+            { id: 1, lat: 45.0163, lng: 78.3739, address: "Тәуелсіздік көшесі, 67", fill: 23, type: "Пластик + Қағаз" },
+            { id: 2, lat: 45.0125, lng: 78.3685, address: "Жансүгіров көшесі, 85", fill: 67, type: "Шыны + Металл" },
+            { id: 3, lat: 45.0210, lng: 78.3790, address: "Балапан шағын ауданы", fill: 12, type: "Органикалық" },
+            { id: 4, lat: 45.0185, lng: 78.3850, address: "Қабанбай батыр көшесі", fill: 89, type: "Барлық түрлер" }
+        ];
+
+        let map;
+        let userMarker = null;
+        let taldyLat = 45.0163;
+        let taldyLng = 78.3739;
+
+        function updatePoints() {
+            document.getElementById('points').textContent = userPoints;
+            document.getElementById('total-points').textContent = userPoints + 1000;
+            localStorage.setItem('ecoPoints', userPoints);
+        }
+
+        function addToHistory(text) {
+            const time = new Date().toLocaleTimeString('kk-KZ', {hour:'2-digit', minute:'2-digit'});
+            history.unshift(`<small>${time}</small> — ${text}`);
+            if (history.length > 5) history.pop();
+            const histDiv = document.getElementById('history');
+            histDiv.innerHTML = `<h4 style="margin: 0 0 10px;">Соңғы әрекеттер</h4>` + 
+                               history.map(item => `<p style="margin: 8px 0; font-size: 14px;">${item}</p>`).join('');
+            localStorage.setItem('ecoHistory', JSON.stringify(history));
+        }
+
+        function addPoints(points, type) {
+            userPoints += points;
+            updatePoints();
+            const msg = `${type} сұрыпталды! +${points} ұпай`;
+            addToHistory(msg);
+            document.getElementById('modal-text').innerHTML = `<strong>${msg}</strong><br>Ұпайыңыз: <b>${userPoints}</b>`;
+            document.getElementById('success-modal').style.display = 'flex';
+        }
+
+        function closeModal() { document.getElementById('success-modal').style.display = 'none'; }
+
+        function initMap() {
+            map = L.map('map').setView([45.0163, 78.3739], 14);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap'
+            }).addTo(map);
+            updateBinMarkers();
+        }
+
+        function updateBinMarkers() {
+            smartBins.forEach(bin => {
+                const color = bin.fill < 30 ? '#4CAF50' : (bin.fill < 70 ? '#FFC107' : '#F44336');
+                L.circleMarker([bin.lat, bin.lng], {
+                    radius: 14, fillColor: color, color: "#fff", weight: 3, opacity: 1, fillOpacity: 0.9
+                }).addTo(map).bindPopup(`<b>${bin.address}</b><br>Толуы: ${bin.fill}%`);
+            });
+        }
+
+        function findMyLocation() {
+            if (userMarker) map.removeLayer(userMarker);
+            userMarker = L.marker([taldyLat, taldyLng]).addTo(map);
+            map.flyTo([taldyLat, taldyLng], 15);
+            alert('📍 Сіздің орныңыз: Талдықорған қаласы!');
+        }
+
+        function renderBinsList() {
+            const container = document.getElementById('bins-list');
+            container.innerHTML = '';
+            smartBins.forEach(bin => {
+                const color = bin.fill < 30 ? 'status-low' : (bin.fill < 70 ? 'status-medium' : 'status-high');
+                const card = document.createElement('div');
+                card.className = 'bin-card';
+                card.innerHTML = `<div style="flex:1;"><strong>${bin.address}</strong><br><small>${bin.type}</small></div>
+                    <div style="text-align:right;"><b>${bin.fill}%</b><div class="fill-bar"><div class="fill-level ${color}" style="width:${bin.fill}%"></div></div></div>`;
+                container.appendChild(card);
+            });
+        }
+
+        function refreshSensors() {
+            smartBins.forEach(bin => bin.fill = Math.floor(Math.random() * 95) + 5);
+            renderBinsList();
+            updateBinMarkers();
+        }
+
+        function switchTab(n) {
+            document.querySelectorAll('.nav-btn').forEach((btn, i) => btn.classList.toggle('active', i === n));
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.getElementById('tab-' + n).classList.add('active');
+            if (n === 1 && !map) { setTimeout(initMap, 100); }
+        }
+
+        window.onload = function() { updatePoints(); renderBinsList(); };
+    </script>
+</body>
+</html>
